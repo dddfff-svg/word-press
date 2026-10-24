@@ -25,3 +25,6 @@ backups
 *.kdbx
 *.1password
 bitwarden_export*
+
+deploy.env.before-*
+*.conf.before-*
