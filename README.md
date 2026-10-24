@@ -112,3 +112,7 @@ npm start
 ## Docker Hub 无法访问时
 
 使用 GitHub Actions 构建并下载离线镜像包，服务器通过导入镜像启动，无需阿里云加速源或服务器在线构建。操作步骤见 [OFFLINE.md](OFFLINE.md)。
+
+## 直接使用云服务器 IP＋HTTPS
+
+保留当前 Vaultwarden，通过受信任的 IP 证书直接访问，无需域名或 SSH 隧道。配置脚本、先决条件及续期说明见 [IP-HTTPS.md](IP-HTTPS.md)。博客登录与密码库主密码解锁保持独立。
