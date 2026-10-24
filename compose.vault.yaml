@@ -1,0 +1,31 @@
+# Optional: docker compose --env-file deploy.env -f compose.yaml -f compose.vault.yaml up -d --build
+services:
+  blog:
+    environment:
+      VAULT_PUBLIC_URL: ${VAULT_PUBLIC_URL:?Set VAULT_PUBLIC_URL (localhost tunnel or HTTPS)}
+  vaultwarden:
+    image: ${VAULT_IMAGE:-vaultwarden/server:1.37.4}
+    restart: unless-stopped
+    environment:
+      DOMAIN: ${VAULT_PUBLIC_URL:?Set VAULT_PUBLIC_URL (localhost tunnel or HTTPS)}
+      SIGNUPS_ALLOWED: ${VAULT_SIGNUPS_ALLOWED:-false}
+      INVITATIONS_ALLOWED: "false"
+      SHOW_PASSWORD_HINT: "false"
+    volumes:
+      - vault-data:/data
+    ports:
+      - "127.0.0.1:${VAULT_PORT:-8222}:80"
+    networks:
+      - vault-network
+    security_opt:
+      - no-new-privileges:true
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+networks:
+  vault-network:
+volumes:
+  vault-data:
+

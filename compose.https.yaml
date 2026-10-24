@@ -1,0 +1,24 @@
+# Optional HTTPS gateway; requires two DNS names pointing to this server and free ports 80/443.
+services:
+  gateway:
+    image: caddy:2
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      BLOG_DOMAIN: ${BLOG_DOMAIN:?Set BLOG_DOMAIN}
+      VAULT_DOMAIN: ${VAULT_DOMAIN:?Set VAULT_DOMAIN}
+    volumes:
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    networks:
+      - default
+      - vault-network
+    depends_on:
+      - blog
+      - vaultwarden
+volumes:
+  caddy-data:
+  caddy-config:

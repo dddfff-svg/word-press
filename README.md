@@ -104,3 +104,7 @@ npm start
 
 完整配置、存储边界和备份说明见 [DEPLOYMENT.md](DEPLOYMENT.md)。
 
+## 密码库（可选，无需域名）
+
+已集成 Vaultwarden 的独立 Docker 服务与博客入口，进入后用独立主密码解锁。没有域名时通过 SSH 隧道访问 localhost，不直接暴露密码库端口。具体部署、注册、锁定和备份步骤见 [VAULT.md](VAULT.md)。
+
