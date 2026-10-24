@@ -1,0 +1,58 @@
+name: Build offline Docker package
+
+on:
+  workflow_dispatch:
+    inputs:
+      site_url:
+        description: 'Blog address, e.g. http://YOUR_SERVER_IP:3080'
+        required: true
+        default: 'http://localhost:3080'
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  package:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    env:
+      SITE_URL: ${{ inputs.site_url }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - name: Validate site address
+        run: |
+          node -e 'const u=new URL(process.env.SITE_URL);if(!["http:","https:"].includes(u.protocol)||u.username||u.password)process.exit(1)'
+      - name: Pull required official images
+        run: |
+          docker pull --platform linux/amd64 node:22-bookworm-slim
+          docker pull --platform linux/amd64 vaultwarden/server:1.37.4
+      - name: Build blog image
+        run: docker build --platform linux/amd64 --build-arg SITE_URL="$SITE_URL" -t daily-blog:local .
+      - name: Smoke test container
+        run: |
+          docker run -d --name daily-blog-smoke -p 127.0.0.1:3099:3000 daily-blog:local
+          trap 'docker logs daily-blog-smoke; docker rm -f daily-blog-smoke' EXIT
+          for attempt in $(seq 1 60); do
+            if curl --fail --silent http://127.0.0.1:3099/api/health/; then exit 0; fi
+            sleep 2
+          done
+          exit 1
+      - name: Export images and source
+        run: |
+          mkdir -p offline/source
+          git archive HEAD | tar -x -C offline/source
+          docker save daily-blog:local node:22-bookworm-slim vaultwarden/server:1.37.4 | gzip -1 > offline/images.tar.gz
+          cd offline
+          sha256sum images.tar.gz > images.sha256
+      - uses: actions/upload-artifact@v7
+        with:
+          name: daily-blog-offline-linux-amd64
+          path: offline/
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 7
+          compression-level: 0
+
