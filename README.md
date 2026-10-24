@@ -108,3 +108,7 @@ npm start
 
 已集成 Vaultwarden 的独立 Docker 服务与博客入口，进入后用独立主密码解锁。没有域名时通过 SSH 隧道访问 localhost，不直接暴露密码库端口。具体部署、注册、锁定和备份步骤见 [VAULT.md](VAULT.md)。
 
+
+## Docker Hub 无法访问时
+
+使用 GitHub Actions 构建并下载离线镜像包，服务器通过导入镜像启动，无需阿里云加速源或服务器在线构建。操作步骤见 [OFFLINE.md](OFFLINE.md)。
