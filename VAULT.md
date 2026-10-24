@@ -96,3 +96,7 @@ sudo docker compose --env-file deploy.env -f compose.yaml -f compose.vault.yaml 
 Next.js 页面和 Compose 配置会进行本地检查。当前环境没有 Docker，尚未启动 Vaultwarden 容器验证注册、解锁、备份或客户端同步；实际部署后请先使用测试账号验证流程，再导入真实密码。
 
 其他候选：[KeeWeb](https://github.com/keeweb/keeweb) 适合 KeePass 文件工作流；[Passbolt](https://github.com/passbolt/passbolt_docker) 更偏团队共享。
+
+## 直接使用云服务器 IP＋HTTPS
+
+保留当前 Vaultwarden，通过受信任的 IP 证书直接访问，无需域名或 SSH 隧道。配置脚本、先决条件及续期说明见 [IP-HTTPS.md](IP-HTTPS.md)。博客登录与密码库主密码解锁保持独立。
