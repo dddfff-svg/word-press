@@ -96,4 +96,3 @@ docker compose --env-file deploy.env -f compose.yaml -f compose.vault.yaml up -d
 curl -f --resolve "$ip:443:127.0.0.1" "https://$ip/" -o /dev/null
 printf '\nVault URL: https://%s\nBlog URL and credentials were kept. Unlock the vault with its own master password.\n' "$ip"
 printf 'Keep TCP 80 open for renewal. Check the renewal timer with: systemctl list-timers daily-vault-cert-renew.timer\n'
-
