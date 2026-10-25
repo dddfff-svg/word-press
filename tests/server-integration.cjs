@@ -66,6 +66,8 @@ async function login() {
 async function main() {
   await start()
   assert.equal((await request('/api/journal')).status, 401)
+  assert.equal((await request('/api/documents')).status, 401)
+  assert.equal((await request('/api/backup')).status, 401)
   assert.equal((await request('/api/files/' + randomUUID())).status, 401)
   assert.equal(
     (
@@ -100,6 +102,7 @@ async function main() {
   assert.equal(uploaded.status, 201, await uploaded.clone().text())
   const file = await uploaded.json()
   const state = {
+    goals: [{ id: randomUUID(), title: 'December competition', date: '2026-12-01', done: false }],
     revision: 0,
     entries: [
       {
@@ -114,7 +117,7 @@ async function main() {
         file,
       },
     ],
-    days: { '2026-10-24': { location: 'Test location', offset: 1 } },
+    days: { '2026-10-24': { location: 'Test location', offset: 1, checkedIn: true } },
   }
   const save = await request('/api/journal', {
     method: 'PUT',
@@ -150,15 +153,104 @@ async function main() {
   const forbidden = new FormData()
   forbidden.append('file', new Blob(['<script>alert(1)</script>']), 'bad.html')
   assert.equal((await request('/api/files', { method: 'POST', body: forbidden })).status, 400)
+  const photo = new FormData()
+  photo.append(
+    'file',
+    new Blob(
+      [
+        Buffer.from(
+          'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jRZkAAAAASUVORK5CYII=',
+          'base64'
+        ),
+      ],
+      { type: 'image/png' }
+    ),
+    'certificate.png'
+  )
+  const photoResponse = await request('/api/files', { method: 'POST', body: photo })
+  assert.equal(photoResponse.status, 201)
+  const attachment = await photoResponse.json()
+  const fields = {
+    name: 'Certificate',
+    category: '证书',
+    description: 'Private document',
+    issuer: 'Test',
+    date: '2026-10-24',
+    expires: '',
+    fileId: attachment.id,
+  }
+  const add = await request('/api/documents', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(fields),
+  })
+  assert.equal(add.status, 201, await add.clone().text())
+  const document = await add.json()
+  assert.equal(
+    (
+      await request('/api/documents', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Origin: 'http://other.example' },
+        body: JSON.stringify(fields),
+      })
+    ).status,
+    403
+  )
+  assert.equal(
+    (
+      await request(`/api/documents/${document.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...fields, name: 'Updated certificate' }),
+      })
+    ).status,
+    200
+  )
+  const backup = await request('/api/backup')
+  assert.equal(backup.status, 200, await backup.clone().text())
+  const archive = Buffer.from(await backup.arrayBuffer())
+  assert.equal(archive[0], 31)
+  assert.equal(archive[1], 139)
+  const backupPath = path.join(data, 'test-backup.tar.gz')
+  fs.writeFileSync(backupPath, archive)
+  const restored = path.join(data, 'restored')
+  fs.mkdirSync(restored)
+  require('node:child_process').execFileSync('tar', ['-xzf', backupPath, '-C', restored])
+  assert.equal(
+    JSON.parse(fs.readFileSync(path.join(restored, 'documents.json'), 'utf8'))[0].name,
+    'Updated certificate'
+  )
+  assert.equal(
+    JSON.parse(fs.readFileSync(path.join(restored, 'journal.json'), 'utf8')).days['2026-10-24']
+      .checkedIn,
+    true
+  )
+  assert.equal(
+    JSON.parse(fs.readFileSync(path.join(restored, 'journal.json'), 'utf8')).goals[0].date,
+    '2026-12-01'
+  )
+  assert.ok(
+    fs
+      .readFileSync(path.join(restored, 'files', attachment.id))
+      .equals(Buffer.from(await (await request('/api/files/' + attachment.id)).arrayBuffer()))
+  )
+  fs.rmSync(backupPath)
+  fs.rmSync(restored, { recursive: true, force: true })
   await stop()
   await start()
   const persisted = await (await request('/api/journal')).json()
   assert.equal(persisted.entries[0].title, 'API integration test')
   assert.equal(persisted.days['2026-10-24'].location, 'Test location')
+  assert.equal(persisted.days['2026-10-24'].checkedIn, true)
+  assert.equal(persisted.goals[0].title, 'December competition')
+  assert.equal((await (await request('/api/documents')).json())[0].name, 'Updated certificate')
+  assert.equal((await request(`/api/documents/${document.id}`, { method: 'DELETE' })).status, 200)
+  assert.equal((await (await request('/api/documents')).json()).length, 0)
   assert.equal((await request('/api/files/' + file.id)).status, 200)
   const logout = await request('/api/session', { method: 'DELETE' })
   assert.equal(logout.status, 200)
   cookie = ''
+  assert.equal((await request('/api/files/' + attachment.id)).status, 401)
   assert.equal((await request('/api/journal')).status, 401)
   console.log(
     'PASS: login, authorization, origin checks, uploads/downloads, validation, conflict protection, restart persistence and logout'

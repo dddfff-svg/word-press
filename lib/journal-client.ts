@@ -11,8 +11,14 @@ export type Entry = {
   done: boolean
   file?: JournalFile
 }
-export type Day = { location?: string; cover?: JournalFile; offset?: number }
-export type Store = { revision?: number; entries: Entry[]; days: Record<string, Day> }
+export type Day = { location?: string; cover?: JournalFile; offset?: number; checkedIn?: boolean }
+export type Goal = { id: string; title: string; date: string; done: boolean }
+export type Store = {
+  revision?: number
+  entries: Entry[]
+  days: Record<string, Day>
+  goals?: Goal[]
+}
 export async function apiResult(response: Response) {
   const value = await response.json()
   if (!response.ok) throw new Error(value.error || '服务请求失败')
@@ -38,7 +44,12 @@ export async function serverPersist(state: Store): Promise<Store> {
     await fetch('/api/journal/', {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ revision: state.revision || 0, entries, days }),
+      body: JSON.stringify({
+        revision: state.revision || 0,
+        entries,
+        days,
+        goals: state.goals || [],
+      }),
     })
   )
 }

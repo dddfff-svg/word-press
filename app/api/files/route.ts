@@ -6,6 +6,7 @@ import {
   ApiError,
   atomicJson,
   dataDir,
+  exclusive,
   handle,
   initialize,
   json,
@@ -63,11 +64,13 @@ export async function POST(request: NextRequest) {
       type = 'image/webp'
     if (['.png', '.jpg', '.jpeg', '.webp'].includes(extension) && !type.startsWith('image/'))
       throw new ApiError(400, '图片格式与扩展名不匹配')
-    await initialize()
-    const id = randomUUID(),
-      metadata = { id, name: file.name, size: file.size, type }
-    await fs.writeFile(path.join(dataDir(), 'files', id), buffer, { flag: 'wx', mode: 0o600 })
-    await atomicJson(path.join(dataDir(), 'files', id + '.json'), metadata)
-    return json(metadata, 201)
+    return exclusive(async () => {
+      await initialize()
+      const id = randomUUID(),
+        metadata = { id, name: file.name, size: file.size, type }
+      await fs.writeFile(path.join(dataDir(), 'files', id), buffer, { flag: 'wx', mode: 0o600 })
+      await atomicJson(path.join(dataDir(), 'files', id + '.json'), metadata)
+      return json(metadata, 201)
+    })
   })
 }

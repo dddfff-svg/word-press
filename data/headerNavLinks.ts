@@ -1,5 +1,6 @@
 const headerNavLinks = [
-  { href: '/', title: '个人空间' },
+  { href: '/', title: '随记首页' },
+  { href: '/documents', title: '我的资料' },
   { href: '/blog', title: '博客文章' },
   { href: '/tags', title: '标签' },
   { href: '/vault', title: '密码库' },

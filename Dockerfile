@@ -1,5 +1,5 @@
-# syntax=docker/dockerfile:1
-FROM node:22-bookworm-slim AS dependencies
+ARG NODE_IMAGE=node:22-bookworm-slim
+FROM ${NODE_IMAGE} AS dependencies
 WORKDIR /app
 ENV NEXT_TELEMETRY_DISABLED=1 HUSKY=0
 COPY package.json package-lock.json ./
@@ -12,7 +12,7 @@ COPY . .
 ENV NODE_ENV=production NEXT_OUTPUT=standalone
 RUN npm run build
 
-FROM node:22-bookworm-slim AS runtime
+FROM ${NODE_IMAGE} AS runtime
 WORKDIR /app
 ENV NODE_ENV=production NEXT_TELEMETRY_DISABLED=1 HOSTNAME=0.0.0.0 PORT=3000 JOURNAL_STORAGE=server JOURNAL_DATA_DIR=/app/storage
 RUN groupadd --gid 1001 nextjs && useradd --uid 1001 --gid nextjs --no-create-home nextjs && mkdir -p /app/storage /app/.next/cache && chown -R nextjs:nextjs /app

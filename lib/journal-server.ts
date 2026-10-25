@@ -106,6 +106,7 @@ export async function initialize() {
 }
 export type StoredFile = { id: string; name: string; size: number; type: string }
 export type Snapshot = {
+  goals?: { id: string; title: string; date: string; done: boolean }[]
   revision: number
   entries: Record<string, unknown>[]
   days: Record<string, Record<string, unknown>>
@@ -213,6 +214,8 @@ export async function validateSnapshot(value: unknown): Promise<Snapshot> {
     date(key)
     const day = record(raw)
     const cover = await reference(day.cover)
+    if (day.checkedIn !== undefined && typeof day.checkedIn !== 'boolean')
+      throw new ApiError(400, '打卡状态无效')
     if (
       cover &&
       (!['image/png', 'image/jpeg', 'image/webp'].includes(cover.type) ||
@@ -225,9 +228,21 @@ export async function validateSnapshot(value: unknown): Promise<Snapshot> {
       location: day.location === undefined ? '' : string(day.location, 100),
       offset: day.offset || 0,
       cover,
+      checkedIn: day.checkedIn === true,
     }
   }
-  return { revision: input.revision as number, entries, days }
+  const rawGoals = input.goals ?? []
+  if (!Array.isArray(rawGoals) || rawGoals.length > 200) throw new ApiError(400, '目标数量无效')
+  const goalIds = new Set<string>()
+  const goals = rawGoals.map((raw) => {
+    const goal = record(raw),
+      id = string(goal.id, 36, true)
+    if (!validId(id) || goalIds.has(id) || typeof goal.done !== 'boolean')
+      throw new ApiError(400, '目标编号或状态无效')
+    goalIds.add(id)
+    return { id, title: string(goal.title, 160, true), date: date(goal.date), done: goal.done }
+  })
+  return { revision: input.revision as number, entries, days, goals }
 }
 export function passwordMatches(password: string, hash: string) {
   const [, salt, expected] = hash.split(':')
