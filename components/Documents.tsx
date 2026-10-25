@@ -113,8 +113,8 @@ export default function Documents() {
               {editing ? '编辑资料' : '添加照片 / 证书'}
             </h2>
             {!editing && (
-              <label className="sm:col-span-2">
-                选择文件（可多选）
+              <label className="rounded-xl border border-dashed border-emerald-200 bg-emerald-50/40 p-5 sm:col-span-2 dark:bg-emerald-950/20">
+                ＋ 选择照片或证书（可多选）
                 <input
                   className={inputClass}
                   type="file"
@@ -125,27 +125,52 @@ export default function Documents() {
                 />
               </label>
             )}
-            {Object.entries({
-              name: '名称（多选时可留空，使用文件名）',
-              category: '分类（可自定义）',
-              issuer: '颁发机构',
-              date: '获得 / 拍摄日期',
-              expires: '到期日期',
-              description: '说明',
-            }).map(([key, label]) => (
-              <label key={key}>
-                {label}
-                <input
-                  className={inputClass}
-                  list={key === 'category' ? 'document-categories' : undefined}
-                  type={['date', 'expires'].includes(key) ? 'date' : 'text'}
-                  maxLength={key === 'description' ? 2000 : 160}
-                  required={key === 'category' || (editing !== '' && key === 'name')}
-                  value={fields[key as keyof typeof fields]}
-                  onChange={(event) => setFields({ ...fields, [key]: event.target.value })}
-                />
-              </label>
-            ))}
+            <label>
+              名称（可留空，自动使用文件名）
+              <input
+                className={inputClass}
+                value={fields.name}
+                maxLength={160}
+                required={!!editing}
+                placeholder="给这份收藏起个名字"
+                onChange={(event) => setFields({ ...fields, name: event.target.value })}
+              />
+            </label>
+            <label>
+              分类
+              <input
+                className={inputClass}
+                list="document-categories"
+                value={fields.category}
+                maxLength={60}
+                required
+                onChange={(event) => setFields({ ...fields, category: event.target.value })}
+              />
+            </label>
+            <details className="rounded-xl bg-gray-50 p-4 sm:col-span-2 dark:bg-gray-900">
+              <summary className="cursor-pointer text-sm text-gray-500">
+                更多信息（选填） · 日期、机构、说明
+              </summary>
+              <div className="mt-4 grid gap-4 sm:grid-cols-2">
+                {Object.entries({
+                  issuer: '颁发机构',
+                  date: '获得 / 拍摄日期',
+                  expires: '到期日期',
+                  description: '说明',
+                }).map(([key, label]) => (
+                  <label key={key}>
+                    {label}
+                    <input
+                      className={inputClass}
+                      type={['date', 'expires'].includes(key) ? 'date' : 'text'}
+                      maxLength={key === 'description' ? 2000 : 160}
+                      value={fields[key as keyof typeof fields]}
+                      onChange={(event) => setFields({ ...fields, [key]: event.target.value })}
+                    />
+                  </label>
+                ))}
+              </div>
+            </details>
             <datalist id="document-categories">
               {['证书', '生活照片', '其他资料', ...new Set(items.map((item) => item.category))].map(
                 (name, index) => (

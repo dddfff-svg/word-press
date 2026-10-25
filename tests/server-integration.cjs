@@ -117,7 +117,14 @@ async function main() {
         file,
       },
     ],
-    days: { '2026-10-24': { location: 'Test location', offset: 1, checkedIn: true } },
+    days: {
+      '2026-10-24': {
+        location: 'Test location',
+        offset: 1,
+        checkedIn: true,
+        checkinTitle: '读书 30 分钟',
+      },
+    },
   }
   const save = await request('/api/journal', {
     method: 'PUT',
@@ -242,6 +249,7 @@ async function main() {
   assert.equal(persisted.entries[0].title, 'API integration test')
   assert.equal(persisted.days['2026-10-24'].location, 'Test location')
   assert.equal(persisted.days['2026-10-24'].checkedIn, true)
+  assert.equal(persisted.days['2026-10-24'].checkinTitle, '读书 30 分钟')
   assert.equal(persisted.goals[0].title, 'December competition')
   assert.equal((await (await request('/api/documents')).json())[0].name, 'Updated certificate')
   assert.equal((await request(`/api/documents/${document.id}`, { method: 'DELETE' })).status, 200)

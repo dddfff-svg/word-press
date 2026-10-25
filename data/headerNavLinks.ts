@@ -4,6 +4,7 @@ const headerNavLinks = [
   { href: '/blog', title: '博客文章' },
   { href: '/tags', title: '标签' },
   { href: '/vault', title: '密码库' },
+  { href: '/spark', title: '续火花' },
   { href: '/about', title: '关于' },
 ]
 export default headerNavLinks

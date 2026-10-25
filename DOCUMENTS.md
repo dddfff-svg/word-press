@@ -58,3 +58,13 @@ docker compose --env-file deploy.env -f compose.yaml -f compose.vault.yaml up -d
 ## 验证
 
 本地生产构建与集成测试覆盖未登录拒绝访问、跨来源写入拒绝、上传、资料编辑/移除、重启持久化、打卡和目标保存、备份下载和解包恢复。Docker 和 systemd 需要在 Linux 服务器上实际执行后确认，不能以本地测试代替。
+
+## 界面更新与 SFTP 上传
+
+倒计时移入日期背景卡片右侧，仅展示最近一个未完成目标；“比赛与计划”可展开管理全部目标。过去的目标不会优先于未来目标。每日打卡移动到当日计划下方，填写活动标题后点击“完成打卡”，标题次日沿用，累计天数包含全部打卡活动，历史记录保留标题。旧版无标题的记录显示“每日打卡”。
+
+首页“照片与证书”展示最近六份已上传资料，登录验证保持不变。资料上传表单仅显示文件、名称与分类，机构日期说明折叠到“更多信息”。日期卡片的“更换背景”支持上传自己的图片，“换一张背景”切换内置图片；按日期保存。
+
+使用提供的 `word-press-layout-update.zip` 时，通过 SFTP 上传到 `/home/ubuntu/word-press/`，在该目录解压覆盖源码，再以 root 执行 `sh scripts/deploy-upload.sh`。更新包不包含 deploy.env、.secrets 或现有 Compose 主配置；只新增续火花的 Compose 叠加配置。此方式不通过 curl 下载源码，Docker 构建仍需要基础镜像及 npm 依赖（或已有缓存）。
+
+顶部“续火花”入口位于 `/spark/`，通过 `deploy.env` 中的 `SPARK_PUBLIC_URL` 指向原服务控制台，叠加配置默认指向 `http://124.221.187.35:8000/`。不自动读取抖音 Cookie 或调用续火花任务。修改后使用 `-f compose.yaml -f compose.vault.yaml -f compose.spark.yaml` 重新创建 blog。原控制台需保留自己的登录保护；博客的登录只保护入口，不替代原服务鉴权。

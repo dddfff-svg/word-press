@@ -13,6 +13,7 @@ services:
       JOURNAL_STORAGE: server
       JOURNAL_DATA_DIR: /app/storage
       SITE_URL: ${SITE_URL:-http://localhost:3080}
+      SPARK_PUBLIC_URL: ${SPARK_PUBLIC_URL:-}
       ADMIN_PASSWORD_HASH_FILE: /run/secrets/admin_password_hash
       SESSION_SECRET_FILE: /run/secrets/session_secret
     ports:

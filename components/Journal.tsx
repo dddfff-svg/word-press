@@ -2,8 +2,9 @@
 
 import { useEffect, useRef, useState } from 'react'
 import './journal.css'
-import { checkinStats } from '../lib/checkin'
+import Checkin from './Checkin'
 import Goals from './Goals'
+import RecentDocuments from './RecentDocuments'
 import {
   Entry,
   Store,
@@ -270,52 +271,8 @@ export default function Journal({ storage }: { storage: 'local' | 'server' }) {
     )
       await save({ ...state, entries: state.entries.filter((x) => x.id !== id) })
   }
-  const checkins = checkinStats(state.days, currentDay || today())
   return (
     <div className="journal">
-      <Goals
-        goals={state.goals || []}
-        today={currentDay || today()}
-        disabled={!ready || busy}
-        onChange={(goals) => save({ ...state, goals })}
-      />
-      <section className="task-card" aria-label="每日打卡">
-        <div className="section-heading">
-          <h2>每天进步一点点</h2>
-          <a href="/documents/">我的资料 ↗</a>
-        </div>
-        <p>
-          连续坚持 <strong>{checkins.streak}</strong> 天 · 累计打卡{' '}
-          <strong>{checkins.total}</strong> 天 · 最长连续 {checkins.longest} 天
-        </p>
-        <button
-          className="add-task"
-          disabled={!ready || busy || !!state.days[currentDay]?.checkedIn}
-          onClick={() =>
-            save({
-              ...state,
-              days: { ...state.days, [currentDay]: { ...state.days[currentDay], checkedIn: true } },
-            })
-          }
-        >
-          {state.days[currentDay]?.checkedIn ? '✓ 今日已打卡' : '✓ 今日打卡'}
-        </button>
-        <p className="muted">
-          按北京时间记录，每天一次。勾选当日计划可记录完成进度，打卡单独确认。
-        </p>
-        <div className="flex flex-wrap gap-2" aria-label="最近七天打卡记录">
-          {Array.from({ length: 7 }, (_, index) => {
-            const key = new Date((dayNumber(currentDay || today()) - 6 + index) * 86400000)
-              .toISOString()
-              .slice(0, 10)
-            return (
-              <span key={key} className="rounded border px-2 py-1 text-sm">
-                {key.slice(5)} {state.days[key]?.checkedIn ? '✓' : '·'}
-              </span>
-            )
-          })}
-        </div>
-      </section>
       <div className="journal-intro">
         <div>
           <p className="eyebrow">MY LITTLE CORNER OF THE WORLD</p>
@@ -338,7 +295,7 @@ export default function Journal({ storage }: { storage: 'local' | 'server' }) {
         <div className="cover-top">
           <span>ONE DAY, ONE MEMORY</span>
           <button disabled={!ready || busy} onClick={() => coverInput.current?.click()}>
-            ▧ 上传封面
+            ▧ 更换背景
           </button>
           <button
             disabled={!ready || busy}
@@ -356,35 +313,45 @@ export default function Journal({ storage }: { storage: 'local' | 'server' }) {
               })
             }
           >
-            ↻ 换一张
+            ↻ 换一张背景
           </button>
         </div>
-        <p className="cover-date">
-          {date
-            ? new Intl.DateTimeFormat('zh-CN', {
-                timeZone: 'Asia/Shanghai',
-                year: 'numeric',
-                month: 'long',
-              }).format(dateObj(date))
-            : '载入中'}
-        </p>
-        <div className="cover-day">
-          <strong>{date?.slice(8) || '—'}</strong>
-          <div>
-            <p>
+        <div className="cover-layout">
+          <div className="cover-calendar">
+            <p className="cover-date">
               {date
                 ? new Intl.DateTimeFormat('zh-CN', {
                     timeZone: 'Asia/Shanghai',
-                    weekday: 'long',
+                    year: 'numeric',
+                    month: 'long',
                   }).format(dateObj(date))
-                : ''}
+                : '载入中'}
             </p>
-            <button disabled={!ready || busy} onClick={() => open('location')}>
-              ⌖ {state.days[date]?.location || '添加今天的位置'} ↗
-            </button>
+            <div className="cover-day">
+              <strong>{date?.slice(8) || '—'}</strong>
+              <div>
+                <p>
+                  {date
+                    ? new Intl.DateTimeFormat('zh-CN', {
+                        timeZone: 'Asia/Shanghai',
+                        weekday: 'long',
+                      }).format(dateObj(date))
+                    : ''}
+                </p>
+                <button disabled={!ready || busy} onClick={() => open('location')}>
+                  ⌖ {state.days[date]?.location || '添加今天的位置'} ↗
+                </button>
+              </div>
+            </div>
+            <p className="cover-quote">在自己的节奏里，收集生活的微光。</p>
           </div>
+          <Goals
+            goals={state.goals || []}
+            today={currentDay || today()}
+            disabled={!ready || busy}
+            onChange={(goals) => save({ ...state, goals })}
+          />
         </div>
-        <p className="cover-quote">在自己的节奏里，收集生活的微光。</p>
         <div className="quick-actions">
           <button disabled={!ready || busy} onClick={() => open('memo')}>
             ＋ 写随记
@@ -427,6 +394,7 @@ export default function Journal({ storage }: { storage: 'local' | 'server' }) {
           }}
         />
       </section>
+      <RecentDocuments />
       <div className="workspace-layout">
         <section className="journal-main">
           <nav className="journal-tabs" aria-label="内容分类">
@@ -616,6 +584,20 @@ export default function Journal({ storage }: { storage: 'local' | 'server' }) {
               ＋ 添加计划
             </button>
           </section>
+          <Checkin
+            days={state.days}
+            today={currentDay || today()}
+            disabled={!ready || busy}
+            onCheckin={(checkinTitle) =>
+              save({
+                ...state,
+                days: {
+                  ...state.days,
+                  [currentDay]: { ...state.days[currentDay], checkedIn: true, checkinTitle },
+                },
+              })
+            }
+          />
           <div className="storage-info">
             <strong>你的小小私人空间</strong>
             <p>

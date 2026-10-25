@@ -1,0 +1,4 @@
+services:
+  blog:
+    environment:
+      SPARK_PUBLIC_URL: ${SPARK_PUBLIC_URL:-http://124.221.187.35:8000/}

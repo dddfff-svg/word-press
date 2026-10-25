@@ -229,6 +229,7 @@ export async function validateSnapshot(value: unknown): Promise<Snapshot> {
       offset: day.offset || 0,
       cover,
       checkedIn: day.checkedIn === true,
+      checkinTitle: day.checkinTitle === undefined ? '' : string(day.checkinTitle, 100),
     }
   }
   const rawGoals = input.goals ?? []

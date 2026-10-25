@@ -11,7 +11,13 @@ export type Entry = {
   done: boolean
   file?: JournalFile
 }
-export type Day = { location?: string; cover?: JournalFile; offset?: number; checkedIn?: boolean }
+export type Day = {
+  location?: string
+  cover?: JournalFile
+  offset?: number
+  checkedIn?: boolean
+  checkinTitle?: string
+}
 export type Goal = { id: string; title: string; date: string; done: boolean }
 export type Store = {
   revision?: number

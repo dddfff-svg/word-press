@@ -5,6 +5,7 @@ import { disableBodyScroll, enableBodyScroll, clearAllBodyScrollLocks } from 'bo
 import { Fragment, useState, useEffect, useRef } from 'react'
 import Link from './Link'
 import headerNavLinks from '@/data/headerNavLinks'
+import HomeMark from './HomeMark'
 
 const MobileNav = () => {
   const [navShow, setNavShow] = useState(false)
@@ -80,6 +81,11 @@ const MobileNav = () => {
                     onClick={onToggleNav}
                   >
                     {link.title}
+                    {link.href === '/' && (
+                      <span className="ml-2">
+                        <HomeMark />
+                      </span>
+                    )}
                   </Link>
                 ))}
               </nav>
