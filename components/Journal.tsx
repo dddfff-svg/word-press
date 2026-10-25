@@ -5,6 +5,8 @@ import './journal.css'
 import Checkin from './Checkin'
 import Goals from './Goals'
 import RecentDocuments from './RecentDocuments'
+import PublishNote from './PublishNote'
+import { cityLabel } from '../lib/city'
 import {
   Entry,
   Store,
@@ -220,18 +222,35 @@ export default function Journal({ storage }: { storage: 'local' | 'server' }) {
         .catch(() => setNotice('文本读取失败，可以保留为附件。'))
   }
   function locate() {
+    if (!window.isSecureContext) {
+      setNotice('自动定位需要 HTTPS，请使用博客 HTTPS 地址，或手动填写城市。')
+      return
+    }
     if (!navigator.geolocation) {
       setNotice('此浏览器不支持定位，请手动填写')
       return
     }
     setLocating(true)
     navigator.geolocation.getCurrentPosition(
-      (position) => {
-        setLocation(
-          `${position.coords.latitude.toFixed(3)}°, ${position.coords.longitude.toFixed(3)}°`
-        )
-        setLocating(false)
-        setNotice('已获取坐标，可改为城市或自定义地点；尚未保存。')
+      async (position) => {
+        try {
+          const query = new URLSearchParams({
+            latitude: String(position.coords.latitude),
+            longitude: String(position.coords.longitude),
+            localityLanguage: 'zh',
+          })
+          const response = await fetch(
+            'https://api.bigdatacloud.net/data/reverse-geocode-client?' + query,
+            { signal: AbortSignal.timeout(10000), referrerPolicy: 'no-referrer' }
+          )
+          if (!response.ok) throw new Error('城市查询暂不可用，请手动填写')
+          setLocation(cityLabel(await response.json()))
+          setNotice('已识别城市，点击保存后生效；不保存经纬度。')
+        } catch (error) {
+          setNotice(error instanceof Error ? error.message : '定位失败，请手动填写城市')
+        } finally {
+          setLocating(false)
+        }
       },
       () => {
         setLocating(false)
@@ -488,6 +507,9 @@ export default function Journal({ storage }: { storage: 'local' | 'server' }) {
                     <button disabled={busy} onClick={() => remove(entry.id)}>
                       删除
                     </button>
+                    {storage === 'server' && entry.kind !== 'task' && (
+                      <PublishNote entry={entry} disabled={busy} />
+                    )}
                     <span>{storage === 'server' ? '仅管理员可见' : '仅此浏览器可见'}</span>
                   </div>
                 </article>
@@ -645,10 +667,11 @@ export default function Journal({ storage }: { storage: 'local' | 'server' }) {
                 disabled={locating}
                 onClick={locate}
               >
-                {locating ? '正在定位…' : '⌖ 获取当前位置坐标'}
+                {locating ? '正在识别城市…' : '⌖ 自动识别城市'}
               </button>
               <p className="muted">
-                定位需浏览器授权。可以将坐标改成城市名称，保存后仅在此浏览器中显示。
+                点击定位会请求浏览器授权，并将当前坐标发送给 BigDataCloud
+                查询城市。仅城市名称会保存到个人空间，不随笔记公开。也可直接手动填写。
               </p>
             </>
           ) : (

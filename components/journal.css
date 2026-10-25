@@ -1008,3 +1008,52 @@
     height: 92px;
   }
 }
+.publish-dialog {
+  max-width: 760px;
+}
+.publish-dialog h3 {
+  font-size: 23px;
+  margin: 16px 0;
+  overflow-wrap: anywhere;
+}
+.publish-message {
+  font-size: 12px;
+  color: #527b63;
+  line-height: 1.8;
+  margin: 12px 0;
+  overflow-wrap: anywhere;
+}
+.publication-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 15px;
+  align-items: center;
+  font-size: 12px;
+  margin: 18px 0;
+  color: #527b63;
+}
+.publish-dialog .publish-checkbox {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  font-size: 12px;
+  line-height: 1.8;
+  margin: 18px 0;
+}
+.publish-dialog .publish-checkbox input {
+  width: 16px;
+  height: 16px;
+  flex: none;
+  margin-top: 3px;
+}
+.publish-body {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  line-height: 1.9;
+  font-size: 14px;
+  max-height: 45vh;
+  overflow: auto;
+  border: 1px solid var(--line);
+  padding: 16px;
+  border-radius: 10px;
+}

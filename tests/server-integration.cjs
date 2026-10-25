@@ -67,6 +67,7 @@ async function main() {
   await start()
   assert.equal((await request('/api/journal')).status, 401)
   assert.equal((await request('/api/documents')).status, 401)
+  assert.equal((await request('/api/publications')).status, 401)
   assert.equal((await request('/api/backup')).status, 401)
   assert.equal((await request('/api/files/' + randomUUID())).status, 401)
   assert.equal(
@@ -213,6 +214,57 @@ async function main() {
     ).status,
     200
   )
+  const publicationInput = {
+    sourceId: state.entries[0].id,
+    title: 'A public note',
+    text: 'Public body <script>alert(1)</script>',
+    category: '分享',
+    tags: '学习，生活',
+    shareFile: false,
+    confirm: true,
+  }
+  const publish = (input, headers = {}) =>
+    request('/api/publications', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...headers },
+      body: JSON.stringify(input),
+    })
+  assert.equal((await publish({ ...publicationInput, confirm: false })).status, 400)
+  assert.equal((await publish(publicationInput, { Origin: 'http://other.example' })).status, 403)
+  const publishedResponse = await publish(publicationInput)
+  assert.equal(publishedResponse.status, 201, await publishedResponse.clone().text())
+  const publication = await publishedResponse.json()
+  assert.equal(publication.fileId, undefined)
+  const guest = (url) => fetch(origin + url, { headers: { Cookie: '' } })
+  assert.equal((await guest(`/api/public-files/${publication.id}/`)).status, 404)
+  const html = await (await guest(`/notes/${publication.id}/`)).text()
+  assert.ok(html.includes('A public note'))
+  assert.ok(!html.includes('Test location'))
+  assert.ok(!html.includes('<script>alert(1)</script>'))
+  const revise = await request('/api/journal', {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      ...state,
+      revision: 1,
+      entries: [{ ...state.entries[0], text: 'Private changes after publication' }],
+    }),
+  })
+  assert.equal(revise.status, 200)
+  assert.ok(
+    !(await (await guest(`/notes/${publication.id}/`)).text()).includes(
+      'Private changes after publication'
+    )
+  )
+  assert.equal((await publish({ ...publicationInput, shareFile: true })).status, 409)
+  assert.equal(
+    (await publish({ ...publicationInput, shareFile: true, fileId: file.id })).status,
+    200
+  )
+  const shared = await guest(`/api/public-files/${publication.id}/`)
+  assert.equal(shared.status, 200)
+  assert.equal(await shared.text(), '# hello\nThis is a test note.')
+  assert.equal((await guest(`/api/files/${file.id}/`)).status, 401)
   const backup = await request('/api/backup')
   assert.equal(backup.status, 200, await backup.clone().text())
   const archive = Buffer.from(await backup.arrayBuffer())
@@ -223,6 +275,10 @@ async function main() {
   const restored = path.join(data, 'restored')
   fs.mkdirSync(restored)
   require('node:child_process').execFileSync('tar', ['-xzf', backupPath, '-C', restored])
+  assert.equal(
+    JSON.parse(fs.readFileSync(path.join(restored, 'publications.json'), 'utf8'))[0].id,
+    publication.id
+  )
   assert.equal(
     JSON.parse(fs.readFileSync(path.join(restored, 'documents.json'), 'utf8'))[0].name,
     'Updated certificate'
@@ -245,6 +301,13 @@ async function main() {
   fs.rmSync(restored, { recursive: true, force: true })
   await stop()
   await start()
+  assert.equal((await guest(`/notes/${publication.id}/`)).status, 200)
+  assert.equal(
+    (await request(`/api/publications/${publication.id}`, { method: 'DELETE' })).status,
+    200
+  )
+  assert.equal((await guest(`/api/public-files/${publication.id}/`)).status, 404)
+  assert.equal((await guest(`/notes/${publication.id}/`)).status, 404)
   const persisted = await (await request('/api/journal')).json()
   assert.equal(persisted.entries[0].title, 'API integration test')
   assert.equal(persisted.days['2026-10-24'].location, 'Test location')
